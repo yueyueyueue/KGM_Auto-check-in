@@ -54,6 +54,8 @@ async function main() {
             needRefresh = true
             printYellow(`账号 ${safeNickname} 需要刷新token`)
             user.token = refreshToken.data.token
+            // 刷新后同步更新请求头，否则后续领VIP仍用旧token
+            headers['cookie'] = 'token=' + user.token + '; userid=' + user.userid
           }
         }
         refreshUserinfo.push(user)
@@ -118,9 +120,12 @@ async function main() {
         setRepoSecret("USERINFO", userinfoJSON)
         printGreen("secret <USERINFO> token刷新成功")
       } catch (error) {
-        printRed("token刷新失败")
+        printYellow("token刷新失败：secret <USERINFO> 未能更新")
         console.dir(sanitizeForLog({ message: error.message }), { depth: null })
-        throw new Error("secret <USERINFO> token刷新失败")
+        if (/HTTP 401/.test(String(error?.message || ""))) {
+          printYellow("原因：PAT 已失效或过期（HTTP 401 Bad credentials），请重新生成PAT并更新Secret PAT")
+        }
+        printYellow("VIP本次已正常领取，旧token仍可继续使用一段时间，故本次运行不算失败")
       }
     } else {
       printYellow("存在账号需要刷新token，但是未配置PAT，未刷新token最多两个月后过期")
