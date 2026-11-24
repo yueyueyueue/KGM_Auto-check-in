@@ -36,6 +36,15 @@ async function main() {
       const userDetail = await send(`/user/detail?timestrap=${Date.now()}`, "GET", headers)
       if (userDetail?.data?.nickname == null) {
         const safeUserId = maskIdentifier(user.userid)
+        if (userDetail?.status !== 1 && userDetail?.msg) {
+          // 接口或网络异常（如 ENOTFOUND / 502），与登录态失效区分开
+          printRed(`接口请求异常，无法确认账号状态, userid: ${safeUserId}`)
+          errorMsg[safeUserId] = {
+            msg: `接口请求异常, userid: ${safeUserId}`,
+            data: summarizeResponse(userDetail)
+          }
+          continue
+        }
         printRed(`token过期或账号不存在, userid: ${safeUserId}`)
         errorMsg[safeUserId] = {
           msg: `token过期或账号不存在, userid: ${safeUserId}`,
